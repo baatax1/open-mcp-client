@@ -36,15 +36,13 @@ class AgentState(CopilotKitState):
     the CopilotKitState fields. We're also adding a custom field, `mcp_config`,
     which will be used to configure MCP services for the agent.
     """
-    # Define mcp_config as an optional field without skipping validation
     mcp_config: Optional[MCPConfig]
+    metadata: Optional[dict]  # <-- Added metadata support
 
 # Default MCP configuration to use when no configuration is provided in the state
-# Uses relative paths that will work within the project structure
 DEFAULT_MCP_CONFIG: MCPConfig = {
     "math": {
         "command": "python",
-        # Use a relative path that will be resolved based on the current working directory
         "args": [os.path.join(os.path.dirname(__file__), "..", "math_server.py")],
         "transport": "stdio",
     },
@@ -62,8 +60,8 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> Command[Litera
     
     # Set up the MCP client and tools using the configuration from state
     async with MultiServerMCPClient(mcp_config) as mcp_client:
-        # Get the tools
-        mcp_tools = mcp_client.get_tools()
+        # Pass metadata to get_tools if supported
+        mcp_tools = mcp_client.get_tools(metadata=state.get("metadata"))
         
         # Create the react agent
         model = ChatOpenAI(model="gpt-4o")
